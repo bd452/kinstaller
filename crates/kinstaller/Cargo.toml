@@ -32,3 +32,4 @@ libc = { version = "0.2", optional = true }
 
 [build-dependencies]
 slint-build = "1.17"
+cc = "1"

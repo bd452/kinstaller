@@ -15,11 +15,7 @@ use std::time::Duration;
 const POWER_SOURCE: &str = "com.lab126.powerd";
 
 /// LIPC events that mean the stock screensaver / lock UI is taking over.
-const PAUSE_EVENTS: &[&str] = &[
-    "goingToScreenSaver",
-    "readyToSuspend",
-    "suspending",
-];
+const PAUSE_EVENTS: &[&str] = &["goingToScreenSaver", "readyToSuspend", "suspending"];
 
 /// LIPC events that mean kinstaller should reclaim the panel.
 const RESUME_EVENTS: &[&str] = &["outOfScreenSaver", "wakeupFromSuspend"];
@@ -31,57 +27,55 @@ static DISPLAY_SUSPENDED: AtomicBool = AtomicBool::new(false);
 
 /// Start watching powerd for sleep/wake transitions.
 pub fn spawn_power_monitor(display: slint_backend_kindle::DisplayControl) {
-    thread::spawn(move || {
-        loop {
-            match wait_for_power_event() {
-                Ok(PowerEvent::Pause(event)) => {
+    thread::spawn(move || loop {
+        match wait_for_power_event() {
+            Ok(PowerEvent::Pause(event)) => {
+                if DISPLAY_SUSPENDED
+                    .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
+                    eprintln!("kinstaller: {event}, pausing display");
+                    resume_stock_ui();
+                    display.set_paused(true);
+                }
+            }
+            Ok(PowerEvent::Resume(event)) => {
+                if DISPLAY_SUSPENDED
+                    .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
+                    .is_ok()
+                {
+                    eprintln!("kinstaller: {event}, resuming display");
+                    pause_stock_ui();
+                    display.set_paused(false);
+                }
+            }
+            Ok(PowerEvent::Quit(event)) => {
+                eprintln!("kinstaller: {event}, exiting");
+                let _ = slint::quit_event_loop();
+                break;
+            }
+            Err(e) => {
+                eprintln!("kinstaller: power monitor: {e}");
+                if screensaver_active() {
                     if DISPLAY_SUSPENDED
                         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
                         .is_ok()
                     {
-                        eprintln!("kinstaller: {event}, pausing display");
+                        eprintln!("kinstaller: screensaver active, pausing display");
                         resume_stock_ui();
                         display.set_paused(true);
                     }
-                }
-                Ok(PowerEvent::Resume(event)) => {
+                } else if DISPLAY_SUSPENDED.load(Ordering::SeqCst) {
+                    eprintln!("kinstaller: screensaver cleared, resuming display");
                     if DISPLAY_SUSPENDED
                         .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
                         .is_ok()
                     {
-                        eprintln!("kinstaller: {event}, resuming display");
                         pause_stock_ui();
                         display.set_paused(false);
                     }
                 }
-                Ok(PowerEvent::Quit(event)) => {
-                    eprintln!("kinstaller: {event}, exiting");
-                    let _ = slint::quit_event_loop();
-                    break;
-                }
-                Err(e) => {
-                    eprintln!("kinstaller: power monitor: {e}");
-                    if screensaver_active() {
-                        if DISPLAY_SUSPENDED
-                            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-                            .is_ok()
-                        {
-                            eprintln!("kinstaller: screensaver active, pausing display");
-                            resume_stock_ui();
-                            display.set_paused(true);
-                        }
-                    } else if DISPLAY_SUSPENDED.load(Ordering::SeqCst) {
-                        eprintln!("kinstaller: screensaver cleared, resuming display");
-                        if DISPLAY_SUSPENDED
-                            .compare_exchange(true, false, Ordering::SeqCst, Ordering::SeqCst)
-                            .is_ok()
-                        {
-                            pause_stock_ui();
-                            display.set_paused(false);
-                        }
-                    }
-                    thread::sleep(Duration::from_secs(2));
-                }
+                thread::sleep(Duration::from_secs(2));
             }
         }
     });

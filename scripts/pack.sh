@@ -1,9 +1,26 @@
 #!/usr/bin/env bash
 # Build the kinstaller .kpkg from cross-compiled binaries and package/ templates.
 # Usage: pack.sh [--skip-build]
+#
+# Requires Python 3.12+ (vendor/KPM/kpm-helper.py uses PEP 701 f-strings).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+pack_python() {
+    local py
+    for py in python3.13 python3.12 python3; do
+        if command -v "$py" >/dev/null 2>&1 \
+            && "$py" -c 'manifest={"manifest_version":1}; print(f"v{manifest["manifest_version"]}")' >/dev/null 2>&1; then
+            echo "$py"
+            return 0
+        fi
+    done
+    echo "error: pack.sh requires Python 3.12+ (vendor/KPM/kpm-helper.py f-strings)" >&2
+    exit 1
+}
+
+PYTHON="$(pack_python)"
 
 SKIP_BUILD=0
 if [[ $# -eq 0 ]]; then
@@ -70,7 +87,7 @@ cp "$HF_BIN" "$PKG_DIR/bin/kindlehf/kinstaller"
 cp "$PW2_BIN" "$PKG_DIR/bin/kindlepw2/kinstaller"
 
 echo "==> Syncing manifest.json version to $VERSION"
-python3 - "$PKG_DIR/manifest.json" "$VERSION" <<'PY'
+"$PYTHON" - "$PKG_DIR/manifest.json" "$VERSION" <<'PY'
 import json
 import sys
 
@@ -85,7 +102,7 @@ PY
 
 OUTPUT="$REPO_ROOT/dist/kinstaller_${VERSION}_kindlehf-kindlepw2.kpkg"
 echo "==> Packing $OUTPUT"
-python3 "$REPO_ROOT/vendor/KPM/kpm-helper.py" package pack "$PKG_DIR" "$OUTPUT"
+"$PYTHON" "$REPO_ROOT/vendor/KPM/kpm-helper.py" package pack "$PKG_DIR" "$OUTPUT"
 
 HASH="$(sha256_of "$OUTPUT")"
 echo

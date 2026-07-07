@@ -2380,6 +2380,7 @@ checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 name = "kinstaller"
 version = "0.1.0"
 dependencies = [
+ "cc",
  "fontique 0.10.0",
  "kpm",
  "libc",

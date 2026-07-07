@@ -33,9 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let factor = device_fb::apply_theme_scale(&app, &metrics);
         eprintln!(
             "kinstaller: display {}x{} px (~{:.0} mm wide), ui-scale {factor:.2}",
-            metrics.width_px,
-            metrics.height_px,
-            metrics.width_mm
+            metrics.width_px, metrics.height_px, metrics.width_mm
         );
     }
 

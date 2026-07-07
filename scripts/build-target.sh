@@ -139,7 +139,8 @@ build_kox() {
         kindlepw2)
             TARGET="armv7-unknown-linux-gnueabi"
             KOX_PREFIX="arm-kindlepw2-linux-gnueabi"
-            GLIBC_PIN="2.7"
+            # KPM's libkpm.so only needs GLIBC_2.7; Rust std currently pulls GLIBC_2.12.
+            GLIBC_PIN="2.12"
             ;;
     esac
 
