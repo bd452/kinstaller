@@ -1,0 +1,38 @@
+# ─── Rust / Cargo ───────────────────────────────────────────────
+/target/
+
+# ─── Build outputs ──────────────────────────────────────────────
+/dist/
+/vendor/prebuilt/
+*.kpkg
+
+# ─── Fetched assets (scripts/fetch-fonts.sh, scripts/setup.sh) ──
+/crates/kinstaller/fonts/*.ttf
+
+# ─── Local device dev scratch ───────────────────────────────────
+# Screenshots from scripts/kindle-screenshot.sh, pulled logs, etc.
+# Keep markdown postmortems if you want them in git.
+/debug/*
+!/debug/*.md
+
+# ─── Environment ────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Logs ───────────────────────────────────────────────────────
+*.log
+
+# ─── OS ─────────────────────────────────────────────────────────
+.DS_Store
+._*
+Thumbs.db
+
+# ─── Editor / IDE ───────────────────────────────────────────────
+/.cursor/
+/docs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

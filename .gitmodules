@@ -1,0 +1,3 @@
+[submodule "vendor/KPM"]
+	path = vendor/KPM
+	url = https://github.com/KindleModding/KPM.git

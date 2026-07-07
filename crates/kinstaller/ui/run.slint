@@ -1,0 +1,112 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { InkButton, OutlineButton, ProgressBar } from "widgets.slint";
+
+export component ConfirmScreen inherits VerticalLayout {
+    padding: Theme.page-padding;
+    spacing: Theme.gap;
+    vertical-stretch: 1;
+
+    Text {
+        text: AppState.confirm-title;
+        font-size: Theme.heading;
+        font-weight: 700;
+        color: Theme.ink;
+        wrap: word-wrap;
+    }
+
+    Rectangle {
+        background: Theme.grey-faint;
+        border-width: 1px;
+        border-color: Theme.grey-mid;
+        border-radius: Theme.radius;
+        VerticalLayout {
+            padding: 12px;
+            spacing: 4px;
+            for line in AppState.confirm-lines: Text {
+                text: "• " + line;
+                font-size: Theme.body;
+                color: Theme.ink;
+                wrap: word-wrap;
+            }
+        }
+    }
+
+    Rectangle {}
+
+    InkButton {
+        text: "Confirm";
+        clicked => { AppState.confirm-accepted(); }
+    }
+
+    OutlineButton {
+        text: "Cancel";
+        clicked => { AppState.confirm-cancelled(); }
+    }
+}
+
+export component RunScreen inherits VerticalLayout {
+    padding: Theme.page-padding;
+    spacing: Theme.gap;
+    vertical-stretch: 1;
+
+    Text {
+        text: AppState.run-title;
+        font-size: Theme.heading;
+        font-weight: 700;
+        color: Theme.ink;
+        wrap: word-wrap;
+    }
+
+    ProgressBar {
+        percent: AppState.run-progress;
+    }
+
+    HorizontalLayout {
+        Text {
+            text: AppState.run-status;
+            color: Theme.grey-text;
+            font-size: Theme.caption;
+            horizontal-stretch: 1;
+        }
+        Text {
+            text: AppState.run-progress + "%";
+            color: Theme.ink;
+            font-size: Theme.body;
+            font-weight: 700;
+        }
+    }
+
+    Rectangle {
+        background: Theme.grey-faint;
+        border-width: 1px;
+        border-color: Theme.grey-mid;
+        border-radius: Theme.radius;
+        vertical-stretch: 1;
+        clip: true;
+        Flickable {
+            log-layout := VerticalLayout {
+                padding: 8px;
+                spacing: 2px;
+                for line in AppState.run-log: Text {
+                    text: line.text;
+                    color: line.is-error ? Theme.error : Theme.ink;
+                    font-size: Theme.caption;
+                    wrap: word-wrap;
+                }
+            }
+            viewport-height: log-layout.preferred-height;
+        }
+    }
+
+    if !AppState.run-done: OutlineButton {
+        text: "Working…";
+        enabled: false;
+        clicked => {}
+    }
+
+    if AppState.run-done: InkButton {
+        text: AppState.run-failed ? "Back (failed)" : "Return to Kinstaller";
+        clicked => { AppState.run-dismissed(); }
+    }
+}

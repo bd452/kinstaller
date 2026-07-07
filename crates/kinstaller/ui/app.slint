@@ -1,0 +1,42 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { TabShell } from "tabs.slint";
+import { PackageDetail } from "detail.slint";
+import { ConfirmScreen, RunScreen } from "run.slint";
+import { SoftFailScreen } from "softfail.slint";
+
+export { PackageRow, RepoRow, VersionRow, LogLine, AppState } from "state.slint";
+export { Theme } from "theme.slint";
+
+export component AppWindow inherits Window {
+    // Logical design canvas; device DPI scaling is applied from Rust via window scale factor.
+    preferred-width: 600px;
+    preferred-height: 800px;
+    background: Theme.paper;
+    title: "Kinstaller";
+
+    if !AppState.compatible: SoftFailScreen {
+        horizontal-stretch: 1;
+        vertical-stretch: 1;
+    }
+
+    if AppState.compatible && AppState.screen == 0: TabShell {
+        horizontal-stretch: 1;
+        vertical-stretch: 1;
+    }
+
+    if AppState.compatible && AppState.screen == 1: PackageDetail {
+        horizontal-stretch: 1;
+        vertical-stretch: 1;
+    }
+
+    if AppState.compatible && AppState.screen == 2: ConfirmScreen {
+        horizontal-stretch: 1;
+        vertical-stretch: 1;
+    }
+
+    if AppState.compatible && AppState.screen == 3: RunScreen {
+        horizontal-stretch: 1;
+        vertical-stretch: 1;
+    }
+}

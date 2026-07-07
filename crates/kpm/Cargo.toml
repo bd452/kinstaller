@@ -1,0 +1,23 @@
+[package]
+name = "kpm"
+description = "Safe Rust interface to the Kindle Package Manager: owned types, worker-thread client, and a mock backend for UI development"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
+# Real backend: dlopen the device-installed libkpm.so through kpm-sys.
+libkpm = ["dep:kpm-sys"]
+# Fake in-memory backend for UI development on any OS.
+mock = []
+
+[dependencies]
+kpm-sys = { workspace = true, optional = true }
+thiserror = { workspace = true }
+
+[[test]]
+name = "mock_backend"
+path = "tests/mock_backend.rs"
+required-features = ["mock"]

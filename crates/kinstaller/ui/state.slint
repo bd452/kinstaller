@@ -1,0 +1,86 @@
+export struct PackageRow {
+    id: string,
+    repo: string,
+    name: string,
+    subtitle: string,
+    badge: string,
+}
+
+export struct RepoRow {
+    id: string,
+    name: string,
+    url: string,
+    description: string,
+}
+
+export struct VersionRow {
+    version: string,
+    url: string,
+}
+
+export struct LogLine {
+    text: string,
+    is-error: bool,
+}
+
+export global AppState {
+    in-out property <bool> compatible: true;
+    in-out property <string> compat-title: "";
+    in-out property <string> compat-body: "";
+    in-out property <bool> busy: false;
+    in-out property <string> status-text: "Ready";
+    in-out property <string> backend-description: "";
+    in-out property <int> active-tab: 0;
+    in-out property <int> screen: 0;
+    in-out property <int> repo-count: 0;
+    in-out property <int> installed-count: 0;
+    in-out property <int> upgrade-count: 0;
+    in-out property <string> home-blurb: "Welcome to Kinstaller — your Cydia-style package manager for Kindle.";
+    in-out property <[RepoRow]> repos;
+    in-out property <string> add-repo-url: "";
+    in-out property <string> browsing-repo-id: "";
+    in-out property <string> browsing-repo-name: "";
+    in-out property <[PackageRow]> repo-packages;
+    in-out property <bool> show-repo-packages: false;
+    in-out property <[PackageRow]> changes;
+    in-out property <[PackageRow]> installed;
+    in-out property <string> search-query: "";
+    in-out property <[PackageRow]> search-results;
+    in-out property <string> detail-id: "";
+    in-out property <string> detail-repo: "";
+    in-out property <string> detail-title: "";
+    in-out property <string> detail-author: "";
+    in-out property <string> detail-description: "";
+    in-out property <[VersionRow]> detail-versions;
+    in-out property <string> detail-installed-version: "";
+    in-out property <string> detail-primary-action: "Install";
+    in-out property <bool> detail-can-remove: false;
+    in-out property <bool> detail-can-launch: false;
+    in-out property <string> confirm-title: "";
+    in-out property <[string]> confirm-lines;
+    in-out property <string> run-title: "";
+    in-out property <int> run-progress: 0;
+    in-out property <string> run-status: "";
+    in-out property <[LogLine]> run-log;
+    in-out property <bool> run-done: false;
+    in-out property <bool> run-failed: false;
+
+    callback tab-changed(int);
+    callback refresh-current-tab();
+    callback update-index();
+    callback upgrade-all();
+    callback add-repo(string);
+    callback remove-repo(string);
+    callback open-repo(string);
+    callback close-repo();
+    callback search-packages(string);
+    callback open-package(string /* repo */, string /* id */);
+    callback close-detail();
+    callback request-install();
+    callback request-remove();
+    callback request-launch();
+    callback confirm-accepted();
+    callback confirm-cancelled();
+    callback run-dismissed();
+    callback request-quit();
+}

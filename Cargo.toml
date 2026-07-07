@@ -1,0 +1,37 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/kpm-sys",
+    "crates/kpm",
+    "crates/kinstaller",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/bd452/kinstaller"
+
+[workspace.dependencies]
+kpm-sys = { path = "crates/kpm-sys" }
+kpm = { path = "crates/kpm" }
+libloading = "0.8"
+sha2 = "0.10"
+thiserror = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+
+# Fast iteration for on-device dev deploys (same features/linker as release; no LTO).
+[profile.dev-device]
+inherits = "release"
+opt-level = 1
+lto = false
+codegen-units = 16
+strip = false
+
+[patch.crates-io]
+slint-backend-kindle = { path = "vendor/slint-backend-kindle" }

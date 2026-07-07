@@ -1,0 +1,94 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { InkButton, OutlineButton, ScreenHeader } from "widgets.slint";
+
+export component PackageDetail inherits VerticalLayout {
+    padding: Theme.page-padding;
+    spacing: Theme.gap;
+    vertical-stretch: 1;
+
+    ScreenHeader {
+        title: AppState.detail-title;
+        subtitle: AppState.detail-author + " · " + AppState.detail-repo;
+        show-back: true;
+        back => { AppState.close-detail(); }
+    }
+
+    if AppState.detail-installed-version != "": HorizontalLayout {
+        alignment: start;
+        Rectangle {
+            border-width: 1px;
+            border-color: Theme.ink;
+            border-radius: 9px;
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                Text {
+                    text: "Installed · v" + AppState.detail-installed-version;
+                    font-size: Theme.caption;
+                    color: Theme.ink;
+                }
+            }
+        }
+    }
+
+    Text {
+        text: AppState.detail-description;
+        font-size: Theme.body;
+        color: Theme.ink;
+        wrap: word-wrap;
+    }
+
+    Text {
+        text: "VERSIONS";
+        font-size: Theme.caption;
+        color: Theme.grey-text;
+        letter-spacing: 1px;
+    }
+
+    Rectangle {
+        border-width: 1px;
+        border-color: Theme.grey-mid;
+        border-radius: Theme.radius;
+        clip: true;
+        VerticalLayout {
+            spacing: 0;
+            for ver[i] in AppState.detail-versions: Rectangle {
+                height: 40px;
+                if i > 0: Rectangle {
+                    y: 0;
+                    height: 1px;
+                    background: Theme.separator;
+                }
+                HorizontalLayout {
+                    padding-left: 12px;
+                    Text {
+                        text: "v" + ver.version;
+                        font-size: Theme.body;
+                        color: Theme.ink;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    Rectangle {}
+
+    InkButton {
+        text: AppState.detail-primary-action;
+        clicked => { AppState.request-install(); }
+    }
+
+    if AppState.detail-can-remove: OutlineButton {
+        text: "Remove";
+        clicked => { AppState.request-remove(); }
+    }
+
+    if AppState.detail-can-launch: OutlineButton {
+        text: "Launch";
+        clicked => { AppState.request-launch(); }
+    }
+}

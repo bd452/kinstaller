@@ -1,0 +1,340 @@
+import { LineEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { CloseButton, InkButton, OutlineButton, PackageList, ScreenHeader } from "widgets.slint";
+
+component StatCell inherits VerticalLayout {
+    in property <int> value;
+    in property <string> label;
+    horizontal-stretch: 1;
+    alignment: center;
+    spacing: 4px;
+
+    Text {
+        text: value;
+        font-size: Theme.title;
+        font-weight: 700;
+        color: Theme.ink;
+        horizontal-alignment: center;
+    }
+
+    Text {
+        text: label;
+        font-size: Theme.caption;
+        color: Theme.grey-text;
+        horizontal-alignment: center;
+    }
+}
+
+export component HomeTab inherits VerticalLayout {
+    spacing: Theme.gap;
+    padding: Theme.page-padding;
+    vertical-stretch: 1;
+    alignment: center;
+
+    Text {
+        text: AppState.home-blurb;
+        font-size: Theme.body;
+        color: Theme.ink;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+    }
+
+    Rectangle {
+        border-width: 1px;
+        border-color: Theme.ink;
+        border-radius: Theme.radius;
+        horizontal-stretch: 1;
+        HorizontalLayout {
+            padding-top: 12px * Theme.ui-scale;
+            padding-bottom: 12px * Theme.ui-scale;
+            StatCell {
+                value: AppState.repo-count;
+                label: "Sources";
+            }
+            Rectangle {
+                width: 1px;
+                background: Theme.separator;
+            }
+            StatCell {
+                value: AppState.installed-count;
+                label: "Installed";
+            }
+            Rectangle {
+                width: 1px;
+                background: Theme.separator;
+            }
+            StatCell {
+                value: AppState.upgrade-count;
+                label: "Upgrades";
+            }
+        }
+    }
+
+    Text {
+        text: AppState.backend-description;
+        font-size: Theme.caption;
+        color: Theme.grey-text;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+    }
+
+    InkButton {
+        text: AppState.busy ? "Working…" : "Update Index";
+        enabled: !AppState.busy;
+        clicked => { AppState.update-index(); }
+    }
+
+    OutlineButton {
+        text: "Refresh";
+        clicked => { AppState.refresh-current-tab(); }
+    }
+}
+
+export component SourcesTab inherits VerticalLayout {
+    spacing: Theme.gap;
+    padding: Theme.page-padding;
+    vertical-stretch: 1;
+
+    if !AppState.show-repo-packages: VerticalLayout {
+        spacing: Theme.gap;
+        vertical-stretch: 1;
+
+        Flickable {
+            vertical-stretch: 1;
+            repo-layout := VerticalLayout {
+                spacing: 0;
+                for repo in AppState.repos: repo-touch := TouchArea {
+                    clicked => { AppState.open-repo(repo.id); }
+                    Rectangle {
+                        background: repo-touch.pressed || repo-touch.has-hover ? Theme.grey-light : Theme.paper;
+                        min-height: Theme.row-height;
+                        HorizontalLayout {
+                            padding-left: Theme.page-padding;
+                            padding-right: Theme.page-padding;
+                            padding-top: 10px;
+                            padding-bottom: 10px;
+                            spacing: 8px;
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                alignment: center;
+                                spacing: 2px;
+                                Text {
+                                    text: repo.name;
+                                    font-weight: 700;
+                                    font-size: Theme.body;
+                                    color: Theme.ink;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: repo.url;
+                                    font-size: Theme.caption;
+                                    color: Theme.grey-text;
+                                    overflow: elide;
+                                }
+                            }
+                            Text {
+                                text: "›";
+                                color: Theme.grey-mid;
+                                font-size: Theme.heading;
+                                vertical-alignment: center;
+                            }
+                        }
+                        Rectangle {
+                            y: parent.height - 1px;
+                            height: 1px;
+                            background: Theme.separator;
+                        }
+                    }
+                }
+            }
+            viewport-height: repo-layout.preferred-height;
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            LineEdit {
+                horizontal-stretch: 1;
+                text <=> AppState.add-repo-url;
+                placeholder-text: "Repository URL…";
+            }
+            InkButton {
+                width: 88px;
+                horizontal-stretch: 0;
+                text: "Add";
+                clicked => { AppState.add-repo(AppState.add-repo-url); }
+            }
+        }
+
+        OutlineButton {
+            text: "Refresh";
+            clicked => { AppState.refresh-current-tab(); }
+        }
+    }
+
+    if AppState.show-repo-packages: VerticalLayout {
+        spacing: Theme.gap;
+        vertical-stretch: 1;
+
+        ScreenHeader {
+            title: AppState.browsing-repo-name;
+            subtitle: AppState.browsing-repo-id;
+            show-back: true;
+            back => { AppState.close-repo(); }
+        }
+
+        PackageList {
+            model: AppState.repo-packages;
+            row-clicked(repo, id) => { AppState.open-package(repo, id); }
+        }
+
+        OutlineButton {
+            text: "Remove This Source";
+            clicked => { AppState.remove-repo(AppState.browsing-repo-id); }
+        }
+    }
+}
+
+export component ChangesTab inherits VerticalLayout {
+    spacing: Theme.gap;
+    padding: Theme.page-padding;
+    vertical-stretch: 1;
+
+    if AppState.changes.length > 0: InkButton {
+        text: "Upgrade All";
+        clicked => { AppState.upgrade-all(); }
+    }
+
+    PackageList {
+        model: AppState.changes;
+        row-clicked(repo, id) => { AppState.open-package(repo, id); }
+    }
+
+    OutlineButton {
+        text: "Refresh";
+        clicked => { AppState.refresh-current-tab(); }
+    }
+}
+
+export component InstalledTab inherits VerticalLayout {
+    spacing: Theme.gap;
+    padding: Theme.page-padding;
+    vertical-stretch: 1;
+
+    PackageList {
+        model: AppState.installed;
+        row-clicked(repo, id) => { AppState.open-package(repo, id); }
+    }
+
+    OutlineButton {
+        text: "Refresh";
+        clicked => { AppState.refresh-current-tab(); }
+    }
+}
+
+export component SearchTab inherits VerticalLayout {
+    spacing: Theme.gap;
+    padding: Theme.page-padding;
+    vertical-stretch: 1;
+
+    HorizontalLayout {
+        spacing: 8px;
+        LineEdit {
+            horizontal-stretch: 1;
+            height: Theme.button-height;
+            text <=> AppState.search-query;
+            placeholder-text: "Search packages…";
+            accepted => { AppState.search-packages(AppState.search-query); }
+        }
+        InkButton {
+            width: 72px;
+            horizontal-stretch: 0;
+            text: "Go";
+            clicked => { AppState.search-packages(AppState.search-query); }
+        }
+    }
+
+    PackageList {
+        model: AppState.search-results;
+        row-clicked(repo, id) => { AppState.open-package(repo, id); }
+    }
+}
+
+export component TabShell inherits VerticalLayout {
+    spacing: 0;
+    vertical-stretch: 1;
+
+    Rectangle {
+        height: Theme.header-height + Theme.safe-top;
+        HorizontalLayout {
+            padding-top: Theme.safe-top;
+            padding-left: Theme.page-padding;
+            padding-right: Theme.page-padding;
+            spacing: 8px;
+            Text {
+                text: "Kinstaller";
+                font-size: Theme.title;
+                font-weight: 700;
+                color: Theme.ink;
+                vertical-alignment: center;
+            }
+            Text {
+                text: AppState.status-text;
+                color: Theme.grey-text;
+                font-size: Theme.caption;
+                horizontal-alignment: right;
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+            CloseButton {
+                clicked => { AppState.request-quit(); }
+            }
+        }
+        Rectangle {
+            y: Theme.header-height + Theme.safe-top - 1px;
+            height: 1px;
+            background: Theme.ink;
+        }
+    }
+
+    VerticalLayout {
+        vertical-stretch: 1;
+        if AppState.active-tab == 0: HomeTab {}
+        if AppState.active-tab == 1: SourcesTab {}
+        if AppState.active-tab == 2: ChangesTab {}
+        if AppState.active-tab == 3: InstalledTab {}
+        if AppState.active-tab == 4: SearchTab {}
+    }
+
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 1px;
+            background: Theme.ink;
+        }
+        HorizontalLayout {
+            height: Theme.tab-height;
+            for tab[i] in 5: tab-touch := TouchArea {
+                clicked => {
+                    AppState.active-tab = i;
+                    AppState.tab-changed(i);
+                }
+                Rectangle {
+                    background: AppState.active-tab == i ? Theme.ink
+                        : tab-touch.pressed ? Theme.grey-light : Theme.paper;
+                    HorizontalLayout {
+                        padding: 4px;
+                        Text {
+                            text: ["Home", "Sources", "Changes", "Installed", "Search"][i];
+                            color: AppState.active-tab == i ? Theme.paper : Theme.grey-text;
+                            font-size: Theme.caption;
+                            font-weight: AppState.active-tab == i ? 700 : 400;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

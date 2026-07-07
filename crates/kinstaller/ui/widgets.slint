@@ -1,0 +1,222 @@
+import { Theme } from "theme.slint";
+import { PackageRow } from "state.slint";
+
+export component InkButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    min-height: Theme.button-height;
+    horizontal-stretch: 1;
+    background: !enabled ? Theme.grey-mid : ta.pressed ? Theme.grey-text : Theme.ink;
+    border-radius: Theme.radius;
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        HorizontalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            Text {
+                text: root.text;
+                color: Theme.paper;
+                font-size: Theme.body;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+export component CloseButton inherits Rectangle {
+    callback clicked;
+
+    width: Theme.close-size;
+    height: Theme.close-size;
+    horizontal-stretch: 0;
+    background: ta.pressed ? Theme.grey-light : transparent;
+    border-radius: Theme.radius;
+
+    ta := TouchArea {
+        clicked => { root.clicked(); }
+        Text {
+            text: "×";
+            color: ta.pressed ? Theme.ink : Theme.grey-text;
+            font-size: Theme.close-icon;
+            font-weight: 300;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component OutlineButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked;
+
+    min-height: Theme.button-height;
+    horizontal-stretch: 1;
+    background: ta.pressed ? Theme.ink : Theme.paper;
+    border-width: 1px;
+    border-color: Theme.ink;
+    border-radius: Theme.radius;
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        HorizontalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            Text {
+                text: root.text;
+                color: ta.pressed ? Theme.paper : Theme.ink;
+                font-size: Theme.body;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+export component PackageList inherits VerticalLayout {
+    in property <[PackageRow]> model;
+    callback row-clicked(string /* repo */, string /* id */);
+    vertical-stretch: 1;
+
+    if model.length == 0: VerticalLayout {
+        vertical-stretch: 1;
+        Rectangle {}
+        Text {
+            text: "Nothing here yet.";
+            color: Theme.grey-text;
+            font-size: Theme.body;
+            horizontal-alignment: center;
+        }
+        Rectangle {}
+    }
+
+    if model.length > 0: Flickable {
+        vertical-stretch: 1;
+        layout := VerticalLayout {
+            spacing: 0;
+            for row[i] in model: row-touch := TouchArea {
+                clicked => { root.row-clicked(row.repo, row.id); }
+                Rectangle {
+                    background: row-touch.pressed || row-touch.has-hover ? Theme.grey-light : Theme.paper;
+                    height: Theme.row-height;
+                    HorizontalLayout {
+                        padding-left: Theme.page-padding;
+                        padding-right: Theme.page-padding;
+                        padding-top: 10px;
+                        padding-bottom: 10px;
+                        spacing: 8px;
+                        VerticalLayout {
+                            horizontal-stretch: 1;
+                            alignment: center;
+                            spacing: 2px;
+                            Text {
+                                text: row.name;
+                                font-weight: 700;
+                                font-size: Theme.body;
+                                color: Theme.ink;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: row.subtitle;
+                                color: Theme.grey-text;
+                                font-size: Theme.caption;
+                                overflow: elide;
+                            }
+                        }
+                        if row.badge != "": Rectangle {
+                            border-width: 1px;
+                            border-color: Theme.grey-mid;
+                            border-radius: 9px;
+                            HorizontalLayout {
+                                padding-left: 8px;
+                                padding-right: 8px;
+                                padding-top: 4px;
+                                padding-bottom: 4px;
+                                Text {
+                                    text: row.badge;
+                                    color: Theme.ink;
+                                    font-size: Theme.caption;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+                        Text {
+                            text: "›";
+                            color: Theme.grey-mid;
+                            font-size: Theme.heading;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Rectangle {
+                        y: parent.height - 1px;
+                        height: 1px;
+                        background: Theme.separator;
+                    }
+                }
+            }
+        }
+        viewport-height: layout.preferred-height;
+    }
+}
+
+export component ProgressBar inherits Rectangle {
+    in property <int> percent;
+
+    height: 8px;
+    background: Theme.grey-mid;
+    border-radius: Theme.radius;
+    clip: true;
+
+    Rectangle {
+        width: parent.width * clamp(root.percent, 0, 100) / 100;
+        background: Theme.ink;
+        border-radius: Theme.radius;
+    }
+}
+
+export component ScreenHeader inherits VerticalLayout {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> show-back: false;
+    callback back();
+
+    spacing: 6px;
+
+    if show-back: TouchArea {
+        min-height: 40px;
+        clicked => { root.back(); }
+        Text {
+            text: "‹ Back";
+            color: Theme.ink;
+            font-size: Theme.body;
+            font-weight: 700;
+            vertical-alignment: center;
+        }
+    }
+
+    Text {
+        text: title;
+        font-size: Theme.heading;
+        font-weight: 700;
+        color: Theme.ink;
+        wrap: word-wrap;
+    }
+
+    if subtitle != "": Text {
+        text: subtitle;
+        color: Theme.grey-text;
+        font-size: Theme.caption;
+        wrap: word-wrap;
+    }
+
+    Rectangle {
+        height: 1px;
+        background: Theme.ink;
+    }
+}

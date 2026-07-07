@@ -1,0 +1,12 @@
+{
+  "manifest_version": 2,
+  "id": "kinstaller",
+  "name": "Kinstaller",
+  "author": "Bryce",
+  "description": "Cydia-style GUI package manager for your Kindle, powered by KPM",
+  "version": [0, 1, 0],
+  "dependencies": [
+    { "id": "kpm", "min": [0, 2, 1], "max": [0, 3, 0] }
+  ],
+  "supported_platforms": ["kindlehf", "kindlepw2"]
+}

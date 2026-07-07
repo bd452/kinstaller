@@ -1,0 +1,55 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+import { CloseButton } from "widgets.slint";
+
+export component SoftFailScreen inherits VerticalLayout {
+    spacing: 0;
+    vertical-stretch: 1;
+
+    Rectangle {
+        height: Theme.header-height + Theme.safe-top;
+        HorizontalLayout {
+            padding-top: Theme.safe-top;
+            padding-left: Theme.page-padding;
+            padding-right: Theme.page-padding;
+            Rectangle { horizontal-stretch: 1; }
+            CloseButton {
+                clicked => { AppState.request-quit(); }
+            }
+        }
+    }
+
+    VerticalLayout {
+        padding: Theme.page-padding * 1.5;
+        spacing: Theme.gap;
+        vertical-stretch: 1;
+
+        Rectangle { vertical-stretch: 1; }
+
+        Text {
+            text: "×";
+            font-size: 64px * Theme.ui-scale;
+            color: Theme.grey-mid;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: AppState.compat-title;
+            font-size: Theme.title;
+            font-weight: 700;
+            color: Theme.ink;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: AppState.compat-body;
+            font-size: Theme.body;
+            color: Theme.ink;
+            wrap: word-wrap;
+            horizontal-alignment: center;
+        }
+
+        Rectangle { vertical-stretch: 1; }
+    }
+}

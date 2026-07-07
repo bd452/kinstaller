@@ -1,0 +1,19 @@
+[package]
+name = "kpm-sys"
+description = "Raw FFI types for libkpm (Kindle Package Manager) plus a dlopen-based runtime loader and ABI compatibility gate"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+links = "kinstaller_kpm_shim"
+
+[dependencies]
+libloading = { workspace = true }
+sha2 = { workspace = true }
+thiserror = { workspace = true }
+
+[build-dependencies]
+cc = "1"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,27 @@
+export global Theme {
+    // Device scale (set from Rust from framebuffer + panel size). Desktop mock stays 1.0.
+    in-out property <float> ui-scale: 1.0;
+
+    in-out property <color> ink: #000000;
+    in-out property <color> paper: #ffffff;
+    in-out property <color> grey-light: #eeeeee;
+    in-out property <color> grey-mid: #cccccc;
+    in-out property <color> grey-text: #555555;
+    in-out property <color> error: #aa0000;
+    in-out property <length> row-height: 64px * ui-scale;
+    in-out property <length> button-height: 40px * ui-scale;
+    in-out property <length> radius: 4px * ui-scale;
+    in-out property <length> title: 24px * ui-scale;
+    in-out property <length> heading: 20px * ui-scale;
+    in-out property <length> body: 14px * ui-scale;
+    in-out property <length> caption: 11px * ui-scale;
+    in-out property <color> grey-faint: #f7f7f7;
+    in-out property <color> separator: #dddddd;
+    in-out property <length> page-padding: 16px * ui-scale;
+    in-out property <length> tab-height: 56px * ui-scale;
+    in-out property <length> gap: 12px * ui-scale;
+    in-out property <length> header-height: 56px * ui-scale;
+    in-out property <length> safe-top: 8px * ui-scale;
+    in-out property <length> close-size: 44px * ui-scale;
+    in-out property <length> close-icon: 28px * ui-scale;
+}
