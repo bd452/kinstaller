@@ -90,6 +90,20 @@ impl Controller {
 
         let c = Rc::clone(self);
         state.on_run_dismissed(move || c.run_dismissed());
+
+        let weak = self.window.clone();
+        state.on_keyboard_append(move |ch| {
+            if let Some(w) = weak.upgrade() {
+                keyboard_edit_target(w.global::<AppState>(), Some(ch.as_str()), false);
+            }
+        });
+
+        let weak = self.window.clone();
+        state.on_keyboard_backspace(move || {
+            if let Some(w) = weak.upgrade() {
+                keyboard_edit_target(w.global::<AppState>(), None, true);
+            }
+        });
     }
 
     fn with_state<F, R>(&self, f: F) -> Option<R>
@@ -380,15 +394,16 @@ impl Controller {
             version: None,
         };
 
-        let lines = vec![
-            format!("{action} {title}").into(),
-            format!("Package: {id}").into(),
-        ];
-
-        self.show_confirm(
-            format!("{action} Package?"),
-            lines,
+        let run_title = match action.as_str() {
+            "Upgrade" => "Upgrading",
+            "Reinstall" => "Reinstalling",
+            _ => "Installing",
+        };
+        let seed = format!("{action} {title} ({id})…");
+        self.begin_run(
+            run_title,
             PendingOp::Install(vec![target]),
+            Some(seed.into()),
         );
     }
 
@@ -411,7 +426,7 @@ impl Controller {
     }
 
     pub fn update_index(&self) {
-        self.begin_run("Updating Index", PendingOp::UpdateIndex);
+        self.begin_run("Updating Index", PendingOp::UpdateIndex, None);
     }
 
     pub fn upgrade_all(&self) {
@@ -460,7 +475,11 @@ impl Controller {
     }
 
     pub fn add_repo(&self, url: String) {
-        self.begin_run("Adding Repository", PendingOp::AddRepo(url));
+        self.begin_run(
+            "Adding Repository",
+            PendingOp::AddRepo(url),
+            Some("Fetching repository manifest…".into()),
+        );
     }
 
     pub fn confirm_accepted(&self) {
@@ -482,27 +501,36 @@ impl Controller {
     }
 
     fn begin_run_from_op(&self, op: &PendingOp) {
-        let title = match op {
-            PendingOp::Install(_) => "Installing",
-            PendingOp::Remove(_) => "Removing",
-            PendingOp::UpdateIndex => "Updating Index",
-            PendingOp::AddRepo(_) => "Adding Repository",
+        let (title, seed) = match op {
+            PendingOp::Install(_) => ("Installing", None),
+            PendingOp::Remove(_) => ("Removing", None),
+            PendingOp::UpdateIndex => ("Updating Index", None),
+            PendingOp::AddRepo(_) => ("Adding Repository", None),
         };
-        self.begin_run(title, op.clone_op());
+        self.begin_run(title, op.clone_op(), seed);
     }
 
-    fn begin_run(&self, title: &str, op: PendingOp) {
+    fn begin_run(&self, title: &str, op: PendingOp, seed_log: Option<SharedString>) {
+        if self.with_state(|s| s.get_busy()).unwrap_or(false) {
+            return;
+        }
+
         *self.pending.lock().unwrap() = Some(op);
+        let weak = self.window.clone();
         self.with_state(|state| {
             state.set_screen(3);
             state.set_run_progress(0);
             state.set_run_status("Starting…".into());
-            state.set_run_log(ModelRc::new(VecModel::from(Vec::<LogLine>::new())));
+            let initial_log = seed_log
+                .map(|text| vec![LogLine { text, is_error: false }])
+                .unwrap_or_default();
+            state.set_run_log(ModelRc::new(VecModel::from(initial_log)));
             state.set_run_done(false);
             state.set_run_failed(false);
             state.set_run_title(title.into());
             state.set_busy(true);
         });
+        request_redraw(&weak);
         self.run_pending();
     }
 
@@ -524,19 +552,7 @@ impl Controller {
                         let state = w.global::<AppState>();
                         match event {
                             Event::Log { level, message } => {
-                                let is_error = level == Verbosity::Error;
-                                let log = state.get_run_log();
-                                let mut lines: Vec<LogLine> = (0..log.row_count())
-                                    .filter_map(|i| log.row_data(i))
-                                    .collect();
-                                lines.push(LogLine {
-                                    text: message.into(),
-                                    is_error,
-                                });
-                                if lines.len() > RUN_LOG_CAP {
-                                    lines.drain(0..lines.len() - RUN_LOG_CAP);
-                                }
-                                state.set_run_log(ModelRc::new(VecModel::from(lines)));
+                                append_run_log(&state, message, level == Verbosity::Error);
                             }
                             Event::Progress { percent, message } => {
                                 state.set_run_progress(percent as i32);
@@ -546,6 +562,7 @@ impl Controller {
                                 let _ = reply.send(true);
                             }
                         }
+                        request_redraw(&weak);
                     }
                 });
             }
@@ -584,15 +601,14 @@ impl Controller {
                     state.set_run_done(true);
                     state.set_run_failed(result.is_err());
                     state.set_busy(false);
-                    state.set_run_status(if result.is_ok() {
-                        "Finished".into()
+                    if result.is_err() {
+                        let err = result.as_ref().map_err(|e| e.to_string()).unwrap_err();
+                        append_run_log(&state, err.clone(), true);
+                        state.set_run_status(err.into());
                     } else {
-                        result
-                            .as_ref()
-                            .map_err(|e| e.to_string())
-                            .unwrap_err()
-                            .into()
-                    });
+                        state.set_run_status("Finished".into());
+                    }
+                    request_redraw(&w.as_weak());
                 }
             });
         });
@@ -603,9 +619,22 @@ impl Controller {
         if !done {
             return;
         }
-        self.with_state(|state| state.set_screen(0));
+        let back_to_detail = self
+            .with_state(|s| !s.get_detail_id().is_empty())
+            .unwrap_or(false);
+        self.with_state(|state| {
+            state.set_screen(if back_to_detail { 1 } else { 0 });
+        });
         self.refresh_home();
         self.refresh_current_tab();
+        if back_to_detail {
+            let Some((repo, id)) = self.with_state(|s| {
+                (s.get_detail_repo().to_string(), s.get_detail_id().to_string())
+            }) else {
+                return;
+            };
+            self.open_package(repo, id);
+        }
     }
 
     pub fn remove_repo(&self, id: String) {
@@ -726,9 +755,97 @@ fn repo_row(repo: &Repository) -> RepoRow {
     }
 }
 
+fn request_redraw(weak: &slint::Weak<AppWindow>) {
+    if let Some(w) = weak.upgrade() {
+        w.window().request_redraw();
+    }
+}
+
+fn append_run_log(state: &AppState<'_>, message: String, is_error: bool) {
+    let log = state.get_run_log();
+    let mut lines: Vec<LogLine> = (0..log.row_count())
+        .filter_map(|i| log.row_data(i))
+        .collect();
+
+    // libkpm streams subprocess output one character at a time; fold fragments
+    // into the current line until we see a newline.
+    if !is_error
+        && !message.contains('\n')
+        && message.len() <= 4
+        && lines.last().is_some_and(|line| !line.is_error)
+    {
+        let last = lines.pop().expect("checked non-empty");
+        let mut text = last.text.to_string();
+        text.push_str(&message);
+        lines.push(LogLine {
+            text: text.into(),
+            is_error: false,
+        });
+    } else {
+        for (i, part) in message.split('\n').enumerate() {
+            if i == 0 {
+                if !is_error && lines.last().is_some_and(|line| !line.is_error) && !part.is_empty()
+                {
+                    let last = lines.pop().expect("checked non-empty");
+                    let mut text = last.text.to_string();
+                    text.push_str(part);
+                    lines.push(LogLine {
+                        text: text.into(),
+                        is_error: false,
+                    });
+                } else if !part.is_empty() || is_error {
+                    lines.push(LogLine {
+                        text: part.into(),
+                        is_error,
+                    });
+                }
+            } else if !part.is_empty() || is_error {
+                lines.push(LogLine {
+                    text: part.into(),
+                    is_error,
+                });
+            }
+        }
+    }
+
+    if lines.len() > RUN_LOG_CAP {
+        lines.drain(0..lines.len() - RUN_LOG_CAP);
+    }
+    state.set_run_log(ModelRc::new(VecModel::from(lines)));
+}
+
 pub fn set_compat_error(app: &AppWindow, title: &str, body: &str) {
     let state = app.global::<AppState>();
     state.set_compatible(false);
     state.set_compat_title(title.into());
     state.set_compat_body(format!("{body}{COMPAT_GUIDANCE}").into());
+}
+
+fn strip_last_grapheme(text: &str) -> String {
+    let count = text.chars().count();
+    if count == 0 {
+        return String::new();
+    }
+    text.chars().take(count - 1).collect()
+}
+
+fn keyboard_edit_target(state: AppState<'_>, append: Option<&str>, backspace: bool) {
+    let target = state.get_keyboard_target();
+    let current = match target {
+        1 => state.get_add_repo_url().to_string(),
+        2 => state.get_search_query().to_string(),
+        _ => return,
+    };
+    let updated = if backspace {
+        strip_last_grapheme(&current)
+    } else if let Some(text) = append {
+        format!("{current}{text}")
+    } else {
+        return;
+    };
+    match target {
+        1 => state.set_add_repo_url(updated.into()),
+        2 => state.set_search_query(updated.into()),
+        _ => {}
+    }
 }

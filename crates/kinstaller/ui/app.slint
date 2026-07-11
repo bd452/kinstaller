@@ -1,6 +1,7 @@
 import { Theme } from "theme.slint";
 import { AppState } from "state.slint";
 import { TabShell } from "tabs.slint";
+import { OnScreenKeyboard } from "keyboard.slint";
 import { PackageDetail } from "detail.slint";
 import { ConfirmScreen, RunScreen } from "run.slint";
 import { SoftFailScreen } from "softfail.slint";
@@ -20,9 +21,20 @@ export component AppWindow inherits Window {
         vertical-stretch: 1;
     }
 
-    if AppState.compatible && AppState.screen == 0: TabShell {
+    if AppState.compatible && AppState.screen == 0: shell-layer := Rectangle {
         horizontal-stretch: 1;
         vertical-stretch: 1;
+        clip: false;
+
+        TabShell {
+            width: parent.width;
+            height: parent.height;
+        }
+
+        if AppState.keyboard-visible: OnScreenKeyboard {
+            width: parent.width;
+            y: parent.height - self.height;
+        }
     }
 
     if AppState.compatible && AppState.screen == 1: PackageDetail {

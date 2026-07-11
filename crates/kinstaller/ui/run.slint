@@ -36,11 +36,13 @@ export component ConfirmScreen inherits VerticalLayout {
 
     InkButton {
         text: "Confirm";
+        enabled: !AppState.busy;
         clicked => { AppState.confirm-accepted(); }
     }
 
     OutlineButton {
         text: "Cancel";
+        enabled: !AppState.busy;
         clicked => { AppState.confirm-cancelled(); }
     }
 }
@@ -78,24 +80,38 @@ export component RunScreen inherits VerticalLayout {
     }
 
     Rectangle {
+        min-height: 120px;
         background: Theme.grey-faint;
         border-width: 1px;
         border-color: Theme.grey-mid;
         border-radius: Theme.radius;
         vertical-stretch: 1;
         clip: true;
-        Flickable {
-            log-layout := VerticalLayout {
-                padding: 8px;
-                spacing: 2px;
-                for line in AppState.run-log: Text {
-                    text: line.text;
-                    color: line.is-error ? Theme.error : Theme.ink;
-                    font-size: Theme.caption;
-                    wrap: word-wrap;
-                }
+        VerticalLayout {
+            padding: 8px;
+            spacing: 2px;
+            if AppState.run-log.length == 0 && !AppState.run-done: Text {
+                text: "Waiting for output…";
+                color: Theme.grey-text;
+                font-size: Theme.caption;
+                wrap: word-wrap;
             }
-            viewport-height: log-layout.preferred-height;
+            Flickable {
+                vertical-stretch: 1;
+                log-layout := VerticalLayout {
+                    padding: 0;
+                    spacing: 2px;
+                    for line in AppState.run-log: Text {
+                        text: line.text;
+                        color: line.is-error ? Theme.error : Theme.ink;
+                        font-size: Theme.caption;
+                        wrap: word-wrap;
+                    }
+                }
+                viewport-height: log-layout.preferred-height;
+                // Keep the most recent package-manager output visible as it arrives.
+                viewport-y: min(0px, self.height - log-layout.preferred-height);
+            }
         }
     }
 

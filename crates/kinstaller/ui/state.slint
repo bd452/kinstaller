@@ -64,6 +64,10 @@ export global AppState {
     in-out property <[LogLine]> run-log;
     in-out property <bool> run-done: false;
     in-out property <bool> run-failed: false;
+    // Touch-first input: Kindle backend has no system keyboard, so LineEdit cannot receive keys.
+    in-out property <bool> touch-input: false;
+    in-out property <bool> keyboard-visible: false;
+    in-out property <int> keyboard-target: 0;
 
     callback tab-changed(int);
     callback refresh-current-tab();
@@ -83,4 +87,6 @@ export global AppState {
     callback confirm-cancelled();
     callback run-dismissed();
     callback request-quit();
+    callback keyboard-append(string);
+    callback keyboard-backspace();
 }

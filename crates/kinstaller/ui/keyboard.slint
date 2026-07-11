@@ -1,0 +1,145 @@
+import { Theme } from "theme.slint";
+import { AppState } from "state.slint";
+
+component KeyButton inherits Rectangle {
+    in property <string> label;
+    in property <float> stretch: 1;
+    callback pressed();
+
+    min-height: Theme.button-height;
+    horizontal-stretch: stretch;
+    background: ta.pressed ? Theme.ink : Theme.paper;
+    border-width: 1px;
+    border-color: Theme.ink;
+    border-radius: Theme.radius;
+
+    ta := TouchArea {
+        clicked => { root.pressed(); }
+        HorizontalLayout {
+            padding-left: 4px;
+            padding-right: 4px;
+            Text {
+                text: root.label;
+                color: ta.pressed ? Theme.paper : Theme.ink;
+                font-size: Theme.body;
+                font-weight: 700;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+component KeyRow inherits HorizontalLayout {
+    in property <[string]> keys;
+    in property <float> lead-stretch: 0;
+    spacing: 4px;
+
+    if lead-stretch > 0: Rectangle {
+        horizontal-stretch: lead-stretch;
+    }
+
+    for key[i] in keys: KeyButton {
+        label: key;
+        pressed => { AppState.keyboard-append(key); }
+    }
+}
+
+export component TouchTextField inherits Rectangle {
+    in-out property <string> text;
+    in property <string> placeholder;
+    in property <int> target-id;
+
+    min-height: Theme.button-height;
+    horizontal-stretch: 1;
+    background: AppState.keyboard-visible && AppState.keyboard-target == root.target-id
+        ? Theme.grey-light : Theme.paper;
+    border-width: 1px;
+    border-color: Theme.ink;
+    border-radius: Theme.radius;
+
+    ta := TouchArea {
+        clicked => {
+            AppState.keyboard-target = root.target-id;
+            AppState.keyboard-visible = true;
+        }
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            Text {
+                text: root.text != "" ? root.text : root.placeholder;
+                color: root.text != "" ? Theme.ink : Theme.grey-text;
+                font-size: Theme.body;
+                overflow: elide;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+export component OnScreenKeyboard inherits Rectangle {
+    background: Theme.paper;
+    border-width: 1px;
+    border-color: Theme.ink;
+
+    VerticalLayout {
+        padding: Theme.page-padding;
+        spacing: 6px;
+
+        HorizontalLayout {
+            spacing: 8px;
+            Text {
+                text: AppState.keyboard-target == 1 ? AppState.add-repo-url : AppState.search-query;
+                font-size: Theme.body;
+                color: Theme.ink;
+                overflow: elide;
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+            KeyButton {
+                stretch: 0;
+                width: 72px;
+                label: "Done";
+                pressed => {
+                    AppState.keyboard-visible = false;
+                    AppState.keyboard-target = 0;
+                }
+            }
+        }
+
+        // Number row
+        KeyRow { keys: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]; }
+
+        // URL punctuation
+        KeyRow { keys: [".", "/", ":", "-", "_", "@"]; }
+
+        // QWERTY top row
+        KeyRow { keys: ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"]; }
+
+        // ASDF home row (half-key stagger)
+        KeyRow {
+            lead-stretch: 0.5;
+            keys: ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
+        }
+
+        // ZXCV bottom row (one-and-a-half-key stagger)
+        KeyRow {
+            lead-stretch: 1.5;
+            keys: ["z", "x", "c", "v", "b", "n", "m"];
+        }
+
+        HorizontalLayout {
+            spacing: 4px;
+            KeyButton {
+                stretch: 1.5;
+                label: "Bksp";
+                pressed => { AppState.keyboard-backspace(); }
+            }
+            KeyButton {
+                stretch: 4;
+                label: "Space";
+                pressed => { AppState.keyboard-append(" "); }
+            }
+        }
+    }
+}

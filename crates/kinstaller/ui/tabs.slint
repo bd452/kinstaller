@@ -1,6 +1,7 @@
 import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { AppState } from "state.slint";
+import { TouchTextField } from "keyboard.slint";
 import { CloseButton, InkButton, OutlineButton, PackageList, ScreenHeader } from "widgets.slint";
 
 component StatCell inherits VerticalLayout {
@@ -153,7 +154,13 @@ export component SourcesTab inherits VerticalLayout {
 
         HorizontalLayout {
             spacing: 8px;
-            LineEdit {
+            if AppState.touch-input: TouchTextField {
+                horizontal-stretch: 1;
+                text <=> AppState.add-repo-url;
+                placeholder: "Repository URL…";
+                target-id: 1;
+            }
+            if !AppState.touch-input: LineEdit {
                 horizontal-stretch: 1;
                 text <=> AppState.add-repo-url;
                 placeholder-text: "Repository URL…";
@@ -162,7 +169,11 @@ export component SourcesTab inherits VerticalLayout {
                 width: 88px;
                 horizontal-stretch: 0;
                 text: "Add";
-                clicked => { AppState.add-repo(AppState.add-repo-url); }
+                clicked => {
+                    AppState.keyboard-visible = false;
+                    AppState.keyboard-target = 0;
+                    AppState.add-repo(AppState.add-repo-url);
+                }
             }
         }
 
@@ -239,7 +250,14 @@ export component SearchTab inherits VerticalLayout {
 
     HorizontalLayout {
         spacing: 8px;
-        LineEdit {
+        if AppState.touch-input: TouchTextField {
+            horizontal-stretch: 1;
+            height: Theme.button-height;
+            text <=> AppState.search-query;
+            placeholder: "Search packages…";
+            target-id: 2;
+        }
+        if !AppState.touch-input: LineEdit {
             horizontal-stretch: 1;
             height: Theme.button-height;
             text <=> AppState.search-query;
@@ -250,7 +268,11 @@ export component SearchTab inherits VerticalLayout {
             width: 72px;
             horizontal-stretch: 0;
             text: "Go";
-            clicked => { AppState.search-packages(AppState.search-query); }
+            clicked => {
+                AppState.keyboard-visible = false;
+                AppState.keyboard-target = 0;
+                AppState.search-packages(AppState.search-query);
+            }
         }
     }
 
@@ -318,6 +340,8 @@ export component TabShell inherits VerticalLayout {
                 clicked => {
                     AppState.active-tab = i;
                     AppState.tab-changed(i);
+                    AppState.keyboard-visible = false;
+                    AppState.keyboard-target = 0;
                 }
                 Rectangle {
                     background: AppState.active-tab == i ? Theme.ink

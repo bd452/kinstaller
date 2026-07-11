@@ -175,6 +175,7 @@ export component ProgressBar inherits Rectangle {
 
     Rectangle {
         width: parent.width * clamp(root.percent, 0, 100) / 100;
+        height: parent.height;
         background: Theme.ink;
         border-radius: Theme.radius;
     }

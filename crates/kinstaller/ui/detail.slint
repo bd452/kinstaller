@@ -79,16 +79,19 @@ export component PackageDetail inherits VerticalLayout {
 
     InkButton {
         text: AppState.detail-primary-action;
+        enabled: !AppState.busy;
         clicked => { AppState.request-install(); }
     }
 
     if AppState.detail-can-remove: OutlineButton {
         text: "Remove";
+        enabled: !AppState.busy;
         clicked => { AppState.request-remove(); }
     }
 
     if AppState.detail-can-launch: OutlineButton {
         text: "Launch";
+        enabled: !AppState.busy;
         clicked => { AppState.request-launch(); }
     }
 }

@@ -28,6 +28,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     wire_quit(&app);
 
     #[cfg(feature = "device")]
+    app.global::<AppState>().set_touch_input(true);
+
+    #[cfg(feature = "device")]
     if let Some((width, height)) = device_fb::visible_pixel_size() {
         let metrics = device_fb::display_metrics(width, height);
         let factor = device_fb::apply_theme_scale(&app, &metrics);
