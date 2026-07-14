@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -13,7 +15,14 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Check packaging shell scripts
+        run: |
+          bash -n scripts/kpm-dev scripts/pack.sh tests/kpm-dev-resolver.sh
+          ./tests/kpm-dev-resolver.sh
+
+      - uses: dtolnay/rust-toolchain@1.96.1
+        with:
+          components: rustfmt, clippy
 
       - name: Fetch fonts
         run: ./scripts/fetch-fonts.sh
@@ -32,27 +41,25 @@ jobs:
 
   device-build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/bd452/kindle-kpm-build:v0.1.0@sha256:c7bd7e4041717bb16765b97d6fe4f578f40d144fa3628fcad81271e22f18a69b
+    env:
+      KOXTOOLCHAIN_ROOT: /opt/x-tools/x-tools
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Trust checked-out workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Check shared devkit version
+        run: |
+          test "$(cat .kpm-devkit-version)" = "0.1.0"
+          test "$(kpm-dev --version)" = "kpm-dev 0.1.0"
 
       - name: Fetch fonts
         run: ./scripts/fetch-fonts.sh
-
-      - name: Install koxtoolchain
-        run: ./scripts/setup-koxtoolchain.sh
-
-      - name: Add ARM targets
-        run: |
-          rustup target add armv7-unknown-linux-gnueabihf
-          rustup target add armv7-unknown-linux-gnueabi
 
       - name: Build kindlehf
         run: ./scripts/build-target.sh kindlehf
@@ -86,5 +93,7 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.kpkg
+          files: |
+            dist/*.kpkg
+            dist/release-metadata.json
           generate_release_notes: true
