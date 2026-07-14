@@ -20,7 +20,9 @@ jobs:
           bash -n scripts/kpm-dev scripts/pack.sh tests/kpm-dev-resolver.sh
           ./tests/kpm-dev-resolver.sh
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.96.1
+        with:
+          components: rustfmt, clippy
 
       - name: Fetch fonts
         run: ./scripts/fetch-fonts.sh
