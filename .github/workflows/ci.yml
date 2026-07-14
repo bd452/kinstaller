@@ -38,7 +38,7 @@ jobs:
   device-build:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/bd452/kindle-kpm-build:v0.1.0
+      image: ghcr.io/bd452/kindle-kpm-build:v0.1.0@sha256:c7bd7e4041717bb16765b97d6fe4f578f40d144fa3628fcad81271e22f18a69b
     env:
       KOXTOOLCHAIN_ROOT: /opt/x-tools/x-tools
     steps:

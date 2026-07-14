@@ -51,7 +51,7 @@ Device binaries must be **dynamically linked against Kindle glibc** so they can
 (same as KPM CI).
 
 Container and CI builds inherit the pinned
-`ghcr.io/bd452/kindle-kpm-build:v0.1.0` environment from
+`ghcr.io/bd452/kindle-kpm-build:v0.1.0@sha256:c7bd7e4041717bb16765b97d6fe4f578f40d144fa3628fcad81271e22f18a69b` environment from
 `kindle-kpm-devkit`; Kinstaller still owns its product-specific Cargo and link
 commands.
 
