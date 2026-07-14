@@ -5,7 +5,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="${KINSTALLER_BUILD_IMAGE:-kinstaller-build:latest}"
+IMAGE="${KINSTALLER_BUILD_IMAGE:-kinstaller-build:kpm-devkit-0.1.0}"
 
 usage() {
     echo "Usage: build-in-container.sh [--dev] <kindlehf|kindlepw2>" >&2

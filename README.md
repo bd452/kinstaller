@@ -50,6 +50,11 @@ Device binaries must be **dynamically linked against Kindle glibc** so they can
 `dlopen()` the on-device `libkpm.so`. That requires the KindleModding **koxtoolchain**
 (same as KPM CI).
 
+Container and CI builds inherit the pinned
+`ghcr.io/bd452/kindle-kpm-build:v0.1.0` environment from
+`kindle-kpm-devkit`; Kinstaller still owns its product-specific Cargo and link
+commands.
+
 **macOS:** install [OrbStack](https://orbstack.dev), then:
 
 ```bash

@@ -37,39 +37,22 @@ jobs:
 
   device-build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/bd452/kindle-kpm-build:v0.1.0
+    env:
+      KOXTOOLCHAIN_ROOT: /opt/x-tools/x-tools
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Checkout kindle-kpm-devkit v0.1.0
-        uses: actions/checkout@v4
-        with:
-          repository: bd452/kindle-kpm-devkit
-          ref: v0.1.0
-          path: .kpm-devkit
-
-      - name: Add kpm-dev to PATH
+      - name: Check shared devkit version
         run: |
-          echo "$GITHUB_WORKSPACE/.kpm-devkit/bin" >> "$GITHUB_PATH"
           test "$(cat .kpm-devkit-version)" = "0.1.0"
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+          test "$(kpm-dev --version)" = "kpm-dev 0.1.0"
 
       - name: Fetch fonts
         run: ./scripts/fetch-fonts.sh
-
-      - name: Install koxtoolchain
-        run: ./scripts/setup-koxtoolchain.sh
-
-      - name: Add ARM targets
-        run: |
-          rustup target add armv7-unknown-linux-gnueabihf
-          rustup target add armv7-unknown-linux-gnueabi
 
       - name: Build kindlehf
         run: ./scripts/build-target.sh kindlehf

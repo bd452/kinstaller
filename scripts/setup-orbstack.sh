@@ -33,7 +33,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 echo "==> Pre-building Linux build image (linux/amd64)"
-docker build --platform linux/amd64 -t kinstaller-build:latest -f "$REPO_ROOT/docker/Dockerfile" "$REPO_ROOT"
+docker build --platform linux/amd64 -t kinstaller-build:kpm-devkit-0.1.0 -f "$REPO_ROOT/docker/Dockerfile" "$REPO_ROOT"
 
 echo
 echo "OrbStack ready for device builds:"
