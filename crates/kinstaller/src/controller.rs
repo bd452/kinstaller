@@ -522,7 +522,12 @@ impl Controller {
             state.set_run_progress(0);
             state.set_run_status("Starting…".into());
             let initial_log = seed_log
-                .map(|text| vec![LogLine { text, is_error: false }])
+                .map(|text| {
+                    vec![LogLine {
+                        text,
+                        is_error: false,
+                    }]
+                })
                 .unwrap_or_default();
             state.set_run_log(ModelRc::new(VecModel::from(initial_log)));
             state.set_run_done(false);
@@ -629,7 +634,10 @@ impl Controller {
         self.refresh_current_tab();
         if back_to_detail {
             let Some((repo, id)) = self.with_state(|s| {
-                (s.get_detail_repo().to_string(), s.get_detail_id().to_string())
+                (
+                    s.get_detail_repo().to_string(),
+                    s.get_detail_id().to_string(),
+                )
             }) else {
                 return;
             };
