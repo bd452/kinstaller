@@ -1,26 +1,15 @@
 #!/usr/bin/env bash
 # Build the kinstaller .kpkg from cross-compiled binaries and package/ templates.
 # Usage: pack.sh [--skip-build]
-#
-# Requires Python 3.12+ (vendor/KPM/kpm-helper.py uses PEP 701 f-strings).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+KPM_DEV_WRAPPER="$REPO_ROOT/scripts/kpm-dev"
 
-pack_python() {
-    local py
-    for py in python3.13 python3.12 python3; do
-        if command -v "$py" >/dev/null 2>&1 \
-            && "$py" -c 'manifest={"manifest_version":1}; print(f"v{manifest["manifest_version"]}")' >/dev/null 2>&1; then
-            echo "$py"
-            return 0
-        fi
-    done
-    echo "error: pack.sh requires Python 3.12+ (vendor/KPM/kpm-helper.py f-strings)" >&2
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "error: pack.sh requires python3 to synchronize the package version" >&2
     exit 1
-}
-
-PYTHON="$(pack_python)"
+fi
 
 SKIP_BUILD=0
 if [[ $# -eq 0 ]]; then
@@ -87,7 +76,7 @@ cp "$HF_BIN" "$PKG_DIR/bin/kindlehf/kinstaller"
 cp "$PW2_BIN" "$PKG_DIR/bin/kindlepw2/kinstaller"
 
 echo "==> Syncing manifest.json version to $VERSION"
-"$PYTHON" - "$PKG_DIR/manifest.json" "$VERSION" <<'PY'
+python3 - "$PKG_DIR/manifest.json" "$VERSION" <<'PY'
 import json
 import sys
 
@@ -101,10 +90,31 @@ with open(manifest_path, "w", encoding="utf-8") as f:
 PY
 
 OUTPUT="$REPO_ROOT/dist/kinstaller_${VERSION}_kindlehf-kindlepw2.kpkg"
+RELEASE_METADATA="$REPO_ROOT/dist/release-metadata.json"
+RELEASE_TAG="${KPM_RELEASE_TAG:-v${VERSION}}"
+SOURCE_COMMIT="${GITHUB_SHA:-$(git -C "$REPO_ROOT" rev-parse HEAD)}"
+RELEASE_BASE_URL="https://github.com/bd452/kinstaller/releases/download/${RELEASE_TAG}"
+
+echo "==> Validating staged package"
+"$KPM_DEV_WRAPPER" validate "$PKG_DIR"
+
 echo "==> Packing $OUTPUT"
-"$PYTHON" "$REPO_ROOT/vendor/KPM/kpm-helper.py" package pack "$PKG_DIR" "$OUTPUT"
+rm -f "$OUTPUT" "$RELEASE_METADATA"
+"$KPM_DEV_WRAPPER" pack "$PKG_DIR" --output "$OUTPUT"
+
+echo "==> Verifying $OUTPUT"
+"$KPM_DEV_WRAPPER" verify "$OUTPUT"
+
+echo "==> Writing $RELEASE_METADATA"
+"$KPM_DEV_WRAPPER" release-metadata "$OUTPUT" \
+    --base-url "$RELEASE_BASE_URL" \
+    --repository bd452/kinstaller \
+    --commit "$SOURCE_COMMIT" \
+    --tag "$RELEASE_TAG" \
+    --output "$RELEASE_METADATA"
 
 HASH="$(sha256_of "$OUTPUT")"
 echo
 echo "Package: $OUTPUT"
 echo "SHA-256: $HASH"
+echo "Release metadata: $RELEASE_METADATA"
