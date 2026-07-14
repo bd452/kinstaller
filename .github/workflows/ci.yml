@@ -116,7 +116,13 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          draft: true
           files: |
             dist/*.kpkg
             dist/release-metadata.json
           generate_release_notes: true
+
+      - name: Publish immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
